@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+	font-family: 'Inter';
+}
+
+a {
+    text-decoration: none;
+	color: inherit;
+}
+
+h1{
+	font-size: 48px;
+}
+
+header{
+	display: flex;
+	justify-content: space-around;
+	height: 65px;
+	align-items: center;
+}
+
+.App{
+	margin: 0 10vw;
+}
+
+.main{
+	margin: 20px 0;
+	border-radius: 20px;
+	height: 600px;
+	background: no-repeat url('./../public/dog.png') center center / cover;
+	color: #fff;
+
+}
+
+.main__wrap{
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	height: 100%;
+}
+
+
+.reviews__block{
+	margin: 20px 0;
+	display: flex;
+	justify-content: flex-start;
+	align-items: start;
+	flex-wrap: wrap;
+	gap: 20px;
+}
+
+.reviews__block div{
+	width: 20vw;
+}
+
+.appointment__form{
+	position: fixed;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	width: 80vw;
+}
