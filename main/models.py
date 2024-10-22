@@ -1,4 +1,5 @@
 import datetime
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from django.db import models
 
@@ -18,6 +19,7 @@ class ServiceModel(models.Model):
 
 
 class AppointmentModel(models.Model):
+    service = models.IntegerField()
     name = models.CharField(max_length=100)
     pet_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=16)
@@ -30,15 +32,15 @@ class AppointmentModel(models.Model):
         return self.name
 
     def check_conflicts(self):
-        # Получаем текущую дату и время начала бронирования
         current_date = self.date_of_appointment
         current_time = self.time_of_appointment
-        current_datetime = datetime.datetime.combine(current_date, current_time)
-        existing_appointments = AppointmentModel.objects.filter(
-            start_time__lte=current_datetime,
-            end_time__gte=current_datetime
-        ).exclude(owner=self).all()
-        return True if existing_appointments else False
+        try:
+            AppointmentModel.objects.get(date_of_appointment=current_date, time_of_appointment=current_time)
+            return True
+        except MultipleObjectsReturned:
+            return False
+        except ObjectDoesNotExist:
+            return True
 
 
 class ReviewsModel(models.Model):

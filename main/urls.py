@@ -10,6 +10,8 @@ router.register(r'company', CompanyViewSet, basename='company')
 router.register(r'reviews', ReviewViewSet, basename='reviews')
 
 urlpatterns = [
-    path('', index, name='index'),
     path('api/', include(router.urls)),
+    path('login/', login_admin),
+    path('logged/',  check_user_logged),
+    path('services/', all_services),
 ]
