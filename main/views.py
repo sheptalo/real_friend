@@ -43,7 +43,8 @@ class ServiceViewSet(ModelViewSet):
     def list(self, request, *args, **kwargs):
         minimum = request.GET.get('min', 0)
         maximum = request.GET.get('max', 100000000)
-        service = (ServiceModel.objects.all().filter(is_active=True).order_by('cost')
+        sort = request.GET.get('sort', 'cost')
+        service = (ServiceModel.objects.all().filter(is_active=True).order_by(sort)
                    .filter(cost__gte=minimum).filter(cost__lte=maximum))
         serializer = ServiceSerializer(service, many=True)
         return Response(serializer.data)

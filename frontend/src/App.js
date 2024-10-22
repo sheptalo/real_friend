@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import "./App.css";
 import Cookies from "js-cookie";
 import InputMask from "react-input-mask";
@@ -409,47 +409,51 @@ const Appointment = ({ open_form, service_id }) => {
 };
 
 const Services = ({ open_form, service_id, services, setServices }) => {
-    const [filters, setFilters] = useState({ min: 0, max: 999999999 });
-
-    let render = [];
+    const [filters, setFilters] = useState({
+        min: 0,
+        max: 999999999,
+        sort: "cost",
+    });
+    const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
     const getServices = () => {
         fetch(
             api_url +
                 "services/?" +
-                `min=${filters["min"]}&max=${filters["max"]}`
+                `min=${filters["min"]}&max=${filters["max"]}&sort=${filters["sort"]}`
         )
             .then((promise) => promise.json())
             .then((data) => setServices(data));
-        render = getServiceRender()
     };
     const openForm = (service) => {
         service_id(service);
         open_form(true);
     };
-    const setNewFilters = () => {
-        const min = document.getElementById("min").value;
-        const max = document.getElementById("max").value;
-        setFilters({ min: min, max: max });
-        getServices();
-        render = getServiceRender();
-    };
-    const getServiceRender = () => {
+    const handleMinChange = (event) =>
+        setFilters({ ...filters, min: event.target.valueAsNumber });
+
+    const handleMaxChange = (event) => 
+        setFilters({ ...filters, max: event.target.valueAsNumber });
+
+    const handleSortChange = (event) => 
+        setFilters({ ...filters, sort: event.target.value });
+
+    const getServiceRender = (service) => {
         let rend = [];
 
-        for (let i = 0; i < services.length; i++) {
+        for (let i = 0; i < service.length; i++) {
             rend.push(
-                <div key={services[i].id} className="service">
+                <div key={service[i].id} className="service">
                     <p>
-                        <b>{services[i].name}</b>
+                        <b>{service[i].name}</b>
                     </p>
                     <p>
-                        <i>{services[i].detail}</i>
+                        <i>{service[i].detail}</i>
                     </p>
-                    <p>{services[i].cost.toLocaleString()}р</p>
+                    <p>{service[i].cost.toLocaleString()}р</p>
                     <button
                         onClick={(_) => {
-                            openForm(services[i].id);
+                            openForm(service[i].id);
                         }}
                     >
                         Забронировать
@@ -463,12 +467,14 @@ const Services = ({ open_form, service_id, services, setServices }) => {
     useEffect((_) => {
         getServices();
     }, []);
-    render = getServiceRender();
+
+    let render = getServiceRender(services);
+
     return (
         <section className="services">
             <h2>Наши услуги</h2>
             <div>
-                <label for="min">цена </label>
+                <label>цена </label>
                 <input
                     type="number"
                     min={0}
@@ -476,6 +482,7 @@ const Services = ({ open_form, service_id, services, setServices }) => {
                     defaultValue={0}
                     id="min"
                     name="min"
+                    onChange={handleMinChange}
                 />
                 -
                 <input
@@ -485,10 +492,19 @@ const Services = ({ open_form, service_id, services, setServices }) => {
                     defaultValue={99999999}
                     id="max"
                     name="max"
+                    onChange={handleMaxChange}
                 />
+                <label> сортировка по </label>
+                <select id="sort" onChange={handleSortChange}>
+                    <option value="cost">по возрастанию цены</option>
+                    <option value="-cost">по уменьшению цены</option>
+                    <option value="name">по названию</option>
+                </select>
                 <button
                     onClick={(_) => {
-                        setNewFilters();
+                        getServices()
+                        render = getServiceRender(services);
+                        forceUpdate();
                     }}
                 >
                     Применить
