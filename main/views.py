@@ -1,3 +1,6 @@
+import datetime
+from string import ascii_letters
+
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.contrib.auth import login, authenticate
@@ -25,7 +28,7 @@ def login_admin(request):
 
 
 def check_user_logged(request):
-    return JsonResponse({"logged":request.user.is_authenticated})
+    return JsonResponse({"logged": request.user.is_authenticated})
 
 
 def all_services(request):
@@ -38,7 +41,10 @@ class ServiceViewSet(ModelViewSet):
     serializer_class = ServiceSerializer
 
     def list(self, request, *args, **kwargs):
-        service = ServiceModel.objects.all().filter(is_active=True).order_by('cost')
+        minimum = request.GET.get('min', 0)
+        maximum = request.GET.get('max', 100000000)
+        service = (ServiceModel.objects.all().filter(is_active=True).order_by('cost')
+                   .filter(cost__gte=minimum).filter(cost__lte=maximum))
         serializer = ServiceSerializer(service, many=True)
         return Response(serializer.data)
 
@@ -50,18 +56,32 @@ class AppointmentViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         req = HttpResponseRedirect('http://127.0.0.1:3000')
-        req.set_cookie('success', False)
+        req.set_cookie('success', 'False')
+        data = {i: request.data[i] for i in request.data.keys() if i != 'csrfmiddlewaretoken'}
+        hours = datetime.time(hour=int(data['time_of_appointment'].split(':')[0]),
+                              minute=int(data['time_of_appointment'].split(':')[1]))
+        date = datetime.date(*(int(i) for i in data['date_of_appointment'].split('-')))
+        print(date)
+        data['time_of_appointment'] = hours
 
-        if AppointmentModel(request.POST).check_conflicts():
+        if AppointmentModel(**data).check_conflicts():
+            name = request.POST.get('name')
+            pet_name = request.POST.get('pet_name')
+            for i in f'{name}':
+                if i.lower() not in 'фйцыячсвукамипенртьогшлбюдщзхъэж -.':
+                    req.set_cookie('err', 'russian_name')
+                    return req
+            for i in pet_name:
+                if i.lower() not in ascii_letters + 'фйцыячсвукамипенртьогшлбюдщзхъэж -.':
+                    req.set_cookie('err', 'pet_name')
+                    return req
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            req.set_cookie('success', True)
-            req.headers = headers
-            # return redirect('http://localhost:3000', headers=headers, status=status.HTTP_201_CREATED)
+            req.set_cookie('success', "True")
+            return req
+        req.set_cookie('err', 'exist')
         return req
-
 
 
 class CompanyViewSet(ModelViewSet):

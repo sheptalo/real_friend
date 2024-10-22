@@ -9,7 +9,7 @@ const Success = () => {
     const [success, setSuccess] = useState(false);
 
     const checkSuccess = () => {
-        setSuccess(Cookies.get("success") === true);
+        setSuccess(Cookies.get("success") === "True");
     };
     useEffect((_) => {
         checkSuccess();
@@ -26,24 +26,36 @@ const Success = () => {
                                 Cookies.remove("success");
                                 setSuccess(false);
                                 window.location.reload();
-
                             }}
                         >
                             Хорошо
                         </button>
                     </div>
                 </div>
-            ) : Cookies.get("success") === 'False' ? (
+            ) : Cookies.get("success") === "False" ? (
                 <div className="success secret">
                     <div className="success__data">
                         <h2>Не Успешно</h2>
-                        <p>
-                            Заявка на эту дату уже есть попробуйте в другое
-                            время
-                        </p>
+
+                        {Cookies.get("err") === "russian_name" ? (
+                            <p>
+                                Ваше имя можно написать только на русском, можно
+                                использовать точки и тире
+                            </p>
+                        ) : Cookies.get("err") === "pet_name" ? (
+                            <p>
+                                В имени питомца можно указать только русские,
+                                английские символы, а также точки и тире
+                            </p>
+                        ) : (
+                            <p>Заявка на выбранную дату уже присутствует</p>
+                        )}
+
                         <button
                             onClick={(_) => {
                                 Cookies.remove("success");
+                                Cookies.remove("err");
+
                                 setSuccess(false);
                                 window.location.reload();
                             }}
@@ -149,21 +161,26 @@ const AdminPanel = ({ setLogged }) => {
                 <p>
                     <b>{appointments[i].name}</b>
                 </p>
+                <p>{appointments[i].time_of_appointment}</p>
+                <p>{appointments[i].date_of_appointment}</p>
+
                 <p>{appointments[i].phone}</p>
-                <button
-                    onClick={(_) => {
-                        Approve(appointments[i].id, i);
-                    }}
-                >
-                    (не)одобрить
-                </button>
-                <button
-                    onClick={(_) => {
-                        deleteAppointment(appointments[i].id);
-                    }}
-                >
-                    удалить
-                </button>
+                <div>
+                    <button
+                        onClick={(_) => {
+                            Approve(appointments[i].id, i);
+                        }}
+                    >
+                        (не)одобрить
+                    </button>
+                    <button
+                        onClick={(_) => {
+                            deleteAppointment(appointments[i].id);
+                        }}
+                    >
+                        удалить
+                    </button>
+                </div>
             </div>
         );
     }
@@ -392,47 +409,65 @@ const Appointment = ({ open_form, service_id }) => {
 };
 
 const Services = ({ open_form, service_id, services, setServices }) => {
+    const [filters, setFilters] = useState({ min: 0, max: 999999999 });
+
+    let render = [];
+
     const getServices = () => {
-        fetch(api_url + "services/")
+        fetch(
+            api_url +
+                "services/?" +
+                `min=${filters["min"]}&max=${filters["max"]}`
+        )
             .then((promise) => promise.json())
             .then((data) => setServices(data));
+        render = getServiceRender()
     };
     const openForm = (service) => {
         service_id(service);
         open_form(true);
     };
+    const setNewFilters = () => {
+        const min = document.getElementById("min").value;
+        const max = document.getElementById("max").value;
+        setFilters({ min: min, max: max });
+        getServices();
+        render = getServiceRender();
+    };
+    const getServiceRender = () => {
+        let rend = [];
+
+        for (let i = 0; i < services.length; i++) {
+            rend.push(
+                <div key={services[i].id} className="service">
+                    <p>
+                        <b>{services[i].name}</b>
+                    </p>
+                    <p>
+                        <i>{services[i].detail}</i>
+                    </p>
+                    <p>{services[i].cost.toLocaleString()}р</p>
+                    <button
+                        onClick={(_) => {
+                            openForm(services[i].id);
+                        }}
+                    >
+                        Забронировать
+                    </button>
+                </div>
+            );
+        }
+        return rend;
+    };
 
     useEffect((_) => {
         getServices();
     }, []);
-
-    let render = [];
-
-    for (let i = 0; i < services.length; i++) {
-        render.push(
-            <div key={services[i].id} className="service">
-                <p>
-                    <b>{services[i].name}</b>
-                </p>
-                <p>
-                    <i>{services[i].detail}</i>
-                </p>
-                <p>{services[i].cost.toLocaleString()}р</p>
-                <button
-                    onClick={(_) => {
-                        openForm(services[i].id);
-                    }}
-                >
-                    Забронировать
-                </button>
-            </div>
-        );
-    }
-
+    render = getServiceRender();
     return (
         <section className="services">
             <h2>Наши услуги</h2>
-            <form>
+            <div>
                 <label for="min">цена </label>
                 <input
                     type="number"
@@ -451,8 +486,17 @@ const Services = ({ open_form, service_id, services, setServices }) => {
                     id="max"
                     name="max"
                 />
-                <button type="submit">Применить</button>
-            </form>
+                <button
+                    onClick={(_) => {
+                        setNewFilters();
+                    }}
+                >
+                    Применить
+                </button>
+                <button onClick={(_) => window.location.reload()}>
+                    сбросить
+                </button>
+            </div>
             <div className="services__blocks">{render}</div>
         </section>
     );

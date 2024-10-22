@@ -34,13 +34,14 @@ class AppointmentModel(models.Model):
     def check_conflicts(self):
         current_date = self.date_of_appointment
         current_time = self.time_of_appointment
+        print(current_date, current_time)
         try:
             AppointmentModel.objects.get(date_of_appointment=current_date, time_of_appointment=current_time)
-            return True
-        except MultipleObjectsReturned:
-            return False
+
         except ObjectDoesNotExist:
             return True
+        print([i.date_of_appointment for i in AppointmentModel.objects.all()])
+        return False
 
 
 class ReviewsModel(models.Model):
