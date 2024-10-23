@@ -191,8 +191,13 @@ input, button, select{
 }
 
 .success__data {
+    padding: 16px;
     background-color: #fff;
-    border-radius: 8px;
+    border-radius: 16px;
+    height: 30vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .admin {
