@@ -28,7 +28,7 @@ header {
     align-items: center;
 }
 
-input, button{
+input, button, select{
     padding: 10px;
     border-radius: 8px;
     border: 1px solid #dbe0e5;

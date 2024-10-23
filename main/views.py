@@ -55,6 +55,22 @@ class AppointmentViewSet(ModelViewSet):
     queryset = AppointmentModel.objects.all()
     serializer_class = AppointmentSerializer
 
+    def list(self, request, *args, **kwargs):
+        filter = request.GET.get('filter', '-')
+        today = datetime.date.today()
+
+        if filter == 'today':
+            obj = AppointmentModel.objects.filter(date_of_appointment="%s" % today.isoformat())
+        elif filter == '?':
+            obj = AppointmentModel.objects.all().order_by('?')
+        elif filter in ['True', 'False']:
+            obj = AppointmentModel.objects.filter(approved=eval(filter))
+        else:
+            obj = AppointmentModel.objects.all()
+        print([i.date_of_appointment for i in obj], today)
+        serializer = AppointmentSerializer(obj, many=True)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
         req = HttpResponseRedirect('http://127.0.0.1:3000')
         req.set_cookie('success', 'False')
@@ -69,11 +85,11 @@ class AppointmentViewSet(ModelViewSet):
             name = request.POST.get('name')
             pet_name = request.POST.get('pet_name')
             for i in f'{name}':
-                if i.lower() not in 'фйцыячсвукамипенртьогшлбюдщзхъэж -.':
+                if i.lower() not in 'фйёцыячсвукамипенртьогшлбюдщзхъэж -.':
                     req.set_cookie('err', 'russian_name')
                     return req
             for i in pet_name:
-                if i.lower() not in ascii_letters + 'фйцыячсвукамипенртьогшлбюдщзхъэж -.':
+                if i.lower() not in ascii_letters + 'фйцыячсёвукамипенртьогшлбюдщзхъэж -.':
                     req.set_cookie('err', 'pet_name')
                     return req
             serializer = self.get_serializer(data=request.data)

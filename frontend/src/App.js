@@ -74,6 +74,7 @@ const Success = () => {
 const AdminPanel = ({ setLogged }) => {
     const [appointments, setAppointments] = useState({});
     const [services, setServices] = useState({});
+    const [filters, setFilters] = useState({ filter: "-" });
 
     const csrf = Cookies.get("csrftoken");
 
@@ -104,7 +105,9 @@ const AdminPanel = ({ setLogged }) => {
     };
 
     const getAppointments = () => {
-        fetch(api_url + "appointment/", { credentials: "include" })
+        fetch(api_url + "appointment/?" + `filter=${filters["filter"]}`, {
+            credentials: "include",
+        })
             .then((res) => res.json())
             .then((data) => setAppointments(data));
     };
@@ -135,62 +138,96 @@ const AdminPanel = ({ setLogged }) => {
         });
         window.location.reload();
     };
-    let render = [];
-    let service_render = [];
 
-    for (let i = 0; i < services.length; i++) {
-        service_render.push(
-            <div key={"service-" + services[i].id} className="admin__services">
-                <p>{services[i].name}</p>
-                <form>
-                    <input
-                        type="checkbox"
-                        name="is_active"
-                        id={"is_active-" + services[i].id}
-                        defaultChecked={services[i].is_active}
-                        onClick={(_) => changeVisibility(services[i].id, i)}
-                    />
-                </form>
-            </div>
-        );
-    }
-    for (let i = 0; i < appointments.length; i++) {
-        render.push(
-            <div key={appointments[i].id} className="appointment__user">
-                {appointments[i].approved ? <p>✓</p> : <p>X</p>}
-                <p>
-                    <b>{appointments[i].name}</b>
-                </p>
-                <p>{appointments[i].time_of_appointment}</p>
-                <p>{appointments[i].date_of_appointment}</p>
-
-                <p>{appointments[i].phone}</p>
-                <div>
-                    <button
-                        onClick={(_) => {
-                            Approve(appointments[i].id, i);
-                        }}
-                    >
-                        (не)одобрить
-                    </button>
-                    <button
-                        onClick={(_) => {
-                            deleteAppointment(appointments[i].id);
-                        }}
-                    >
-                        удалить
-                    </button>
+    const ChangeFilters = (event) => {
+        setFilters({ filter: event.target.value });
+    };
+    const renderService = () => {
+        let temp = [];
+        for (let i = 0; i < services.length; i++) {
+            temp.push(
+                <div
+                    key={"service-" + services[i].id}
+                    className="admin__services"
+                >
+                    <p>{services[i].name}</p>
+                    <form>
+                        <input
+                            type="checkbox"
+                            name="is_active"
+                            id={"is_active-" + services[i].id}
+                            defaultChecked={services[i].is_active}
+                            onClick={(_) => changeVisibility(services[i].id, i)}
+                        />
+                    </form>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
+        return temp;
+    };
+    const renderAppointments = () => {
+        let temp = []
+        for (let i = 0; i < appointments.length; i++) {
+            temp.push(
+                <div key={appointments[i].id} className="appointment__user">
+                    {appointments[i].approved ? <p>✓</p> : <p>X</p>}
+                    <p>
+                        <b>{appointments[i].name}</b>
+                    </p>
+                    <p>{appointments[i].time_of_appointment}</p>
+                    <p>{appointments[i].date_of_appointment}</p>
+
+                    <p>{appointments[i].phone}</p>
+                    <div>
+                        <button
+                            onClick={(_) => {
+                                Approve(appointments[i].id, i);
+                            }}
+                        >
+                            (не)одобрить
+                        </button>
+                        <button
+                            onClick={(_) => {
+                                deleteAppointment(appointments[i].id);
+                            }}
+                        >
+                            удалить
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return temp;
+    };
+
+    let render = renderAppointments();
+    let service_render = renderService();
+
     useEffect((_) => {
         getAppointments();
         getServices();
     }, []);
+
     return (
         <div className="admin">
             <button onClick={(_) => setLogged(false)}>X</button>
+            <div>
+                <select onChange={ChangeFilters} name="sort" id="sort">
+                    <option value="-">Без фильтра</option>
+                    <option value="today">Сегодня</option>
+                    <option value="True">Одобренные</option>
+                    <option value="False">Не одобренные</option>
+                    <option value="?">Случайно</option>
+                </select>
+                <button
+                    onClick={(_) => {
+                        getAppointments();
+                        render = renderAppointments();
+                    }}
+                >
+                    Применить
+                </button>
+            </div>
             <div className="list__admin">{render}</div>
             {service_render}
         </div>
@@ -281,7 +318,9 @@ const Contacts = ({ company }) => {
                 </div>
                 <div className="contacts__block">
                     <h3>Ссылки</h3>
-                    <p className="contacts__data">{company.links}</p>
+                    <a href={company.links} className="contacts__data">
+                        {company.links}
+                    </a>
                 </div>
             </div>
         </section>
@@ -432,10 +471,10 @@ const Services = ({ open_form, service_id, services, setServices }) => {
     const handleMinChange = (event) =>
         setFilters({ ...filters, min: event.target.valueAsNumber });
 
-    const handleMaxChange = (event) => 
+    const handleMaxChange = (event) =>
         setFilters({ ...filters, max: event.target.valueAsNumber });
 
-    const handleSortChange = (event) => 
+    const handleSortChange = (event) =>
         setFilters({ ...filters, sort: event.target.value });
 
     const getServiceRender = (service) => {
@@ -502,7 +541,7 @@ const Services = ({ open_form, service_id, services, setServices }) => {
                 </select>
                 <button
                     onClick={(_) => {
-                        getServices()
+                        getServices();
                         render = getServiceRender(services);
                         forceUpdate();
                     }}
